@@ -2,6 +2,10 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"errors"
+	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
@@ -15,6 +19,9 @@ import (
 	"go.mongodb.org/mongo-driver/x/bsonx"
 	"gopkg.in/mgo.v2/bson"
 )
+
+var dev = true
+var mongoURI = "mongodb://localhost:27017"
 
 func main() {
 	err := app.Run(os.Args)
@@ -34,8 +41,34 @@ type Data struct {
 	LastUpdated int64              `bson:"last_updated"`
 }
 
+func getCustomTLSConfig(caFile string) (*tls.Config, error) {
+	tlsConfig := new(tls.Config)
+	certs, err := ioutil.ReadFile(caFile)
+
+	if err != nil {
+		return tlsConfig, err
+	}
+
+	tlsConfig.RootCAs = x509.NewCertPool()
+	ok := tlsConfig.RootCAs.AppendCertsFromPEM(certs)
+
+	if !ok {
+		return tlsConfig, errors.New("Failed parsing pem file")
+	}
+
+	return tlsConfig, nil
+}
+
 func connect(ctx context.Context) *mongo.Client {
-	mongoReaderClientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
+	var tlsConfig *tls.Config
+	var err error
+	if !dev {
+		tlsConfig, err = getCustomTLSConfig("./rds-combined-ca-bundle.pem")
+		if err != nil {
+			log.Fatalf("Failed getting TLS configuration: %v", err)
+		}
+	}
+	mongoReaderClientOptions := options.Client().ApplyURI(mongoURI).SetTLSConfig(tlsConfig)
 	client, err := mongoLib.Connect(context.TODO(), mongoReaderClientOptions)
 	if err != nil {
 		log.Fatalln("Mongo Connection Failed:", err.Error())
