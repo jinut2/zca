@@ -22,6 +22,7 @@ import (
 
 var dev = true
 var mongoURI = "mongodb://localhost:27017"
+var tlsfile = "./rds-combined-ca-bundle.pem"
 
 func main() {
 	err := app.Run(os.Args)
@@ -63,7 +64,7 @@ func connect(ctx context.Context) *mongo.Client {
 	var tlsConfig *tls.Config
 	var err error
 	if !dev {
-		tlsConfig, err = getCustomTLSConfig("./rds-combined-ca-bundle.pem")
+		tlsConfig, err = getCustomTLSConfig(tlsfile)
 		if err != nil {
 			log.Fatalf("Failed getting TLS configuration: %v", err)
 		}
