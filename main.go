@@ -23,34 +23,6 @@ func main() {
 	}
 }
 
-func run() {
-	ctx := context.TODO()
-	log.Println("Connecting Mongo.")
-	client := connect(ctx)
-	defer client.Disconnect(ctx)
-
-	// setupDB(client)
-
-	ids := getAllIDs(ctx, client)
-	first := ids[0:100000]
-	second := ids[0:100000]
-	third := ids[0:100000]
-	fourth := ids[0:100000]
-
-	var wg sync.WaitGroup
-	start := time.Now()
-	wg.Add(1)
-	go asyncUpdateData(ctx, &wg, client, first, 1)
-	wg.Add(1)
-	go asyncUpdateData(ctx, &wg, client, second, 2)
-	wg.Add(1)
-	go asyncUpdateData(ctx, &wg, client, third, 3)
-	wg.Add(1)
-	go asyncUpdateData(ctx, &wg, client, fourth, 4)
-	wg.Wait()
-	log.Println(">>>>", time.Since(start), "is the total time taken")
-}
-
 type Data struct {
 	ID          primitive.ObjectID `bson:"_id"`
 	Field1      int                `bson:"field_1"`
